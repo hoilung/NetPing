@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Text.RegularExpressions;
 
 namespace NetPing
 {
@@ -17,6 +19,7 @@ namespace NetPing
 
                 Console.WriteLine("\r\n同网段ping，当前并发检测数量为：" + Environment.ProcessorCount * 2 + "，默认检测超时时间：200ms\r\n");
                 var ip = args.Any() ? args[0] : string.Empty;
+                var port = (args.Length == 2 && Regex.IsMatch(args[1], @"^\d+$")) ? int.Parse(args[1]) : 0;
 
                 IPAddress address = null;
 
@@ -27,6 +30,12 @@ namespace NetPing
                         Console.Write("输入网段中任意一个IP：");
                         Console.ForegroundColor = ConsoleColor.Green;
                         ip = Console.ReadLine();
+                        Console.Write("是否检测指定端口号? (回车忽略继续，否则请输入端口号)：");
+                        var ischecktcp = Console.ReadLine();
+                        if (Regex.IsMatch(ischecktcp, @"^\d+$") && int.Parse(ischecktcp) is int a && a > 0 && a < 65535)
+                        {
+                            port = a;
+                        }
                     }
                     if (ip == "q")
                         break;
@@ -34,20 +43,77 @@ namespace NetPing
                 if (ip == "q" || address == null)
                     break;
 
-                checkIp(address);
+                if (port > 0)
+                    checkTcpIp(address, port);
+                else
+                    checkIp(address);
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = ConsoleColor.Black;
-                if(args.Length>0)
+                if (args.Length > 0)
                 {
                     Console.WriteLine();
                     break;
                 }
                 Console.WriteLine("\r\n任意键继续，q键退出");
                 var k = Console.ReadKey();
-                q = k.Key;                
+                q = k.Key;
             } while (q != ConsoleKey.Q);
 
 
+        }
+        private static void checkTcpIp(IPAddress address, int port)
+        {
+            var ipsub = address.ToString().Split('.');
+            var ips = Enumerable.Range(1, 254).Select(m => new IPInfo { ip = $"{ipsub[0]}.{ipsub[1]}.{ipsub[2]}.{m}", num = m, state = "" }).ToList();
+            ConcurrentQueue<IPInfo> queue = new ConcurrentQueue<IPInfo>();
+            foreach (var p in ips)
+            {
+                queue.Enqueue(p);
+            }
+            var tcpClients = new TcpClient[Environment.ProcessorCount * 2];
+            for (int i = 0; i < tcpClients.Length; i++)
+            {
+                tcpClients[i] = new TcpClient();
+                tcpClients[i].ReceiveTimeout = 200;
+                tcpClients[i].SendTimeout = 200;
+            }
+            var st = Stopwatch.StartNew();
+            st.Start();
+            var d = Parallel.ForEach(tcpClients, tcpclient =>
+            {
+                while (queue.TryDequeue(out IPInfo kv))
+                {
+                    try
+                    {
+
+                        tcpclient.Connect(kv.ip, port);
+                        kv.state = tcpclient.Connected ? IPStatus.Success.ToString() : IPStatus.Unknown.ToString();
+
+                    }
+                    catch (Exception ex)
+                    {
+                        kv.state = IPStatus.Unknown.ToString();
+                    }
+                    finally
+                    {
+                        Console.WriteLine($"TCP {kv.ip}:{port} {kv.state}");
+                        if (tcpclient.Connected)
+                        {
+                            tcpclient.Close();
+                        }
+                    }
+                }
+            });
+            st.Stop();
+            Console.WriteLine("\r\n本次检测范围：" + ips.FirstOrDefault() + "-" + ips.LastOrDefault() + " TCP端口：" + port + " 用时：" + st.ElapsedMilliseconds + "ms\r\n");
+
+            for (int i = 0; i < ips.Count; i += 10)
+            {
+                var col = ips.Skip(i).Take(10).ToList();
+                write(col);
+
+            }
+            write(ips.Where(m => m.state == IPStatus.Success.ToString()).ToList(), true);
         }
 
         private static void checkIp(IPAddress address)
@@ -63,7 +129,7 @@ namespace NetPing
             }
 
 
-            var pings = new Ping[20];
+            var pings = new Ping[Environment.ProcessorCount * 2];
             for (int i = 0; i < pings.Length; i++)
             {
                 pings[i] = new Ping();
@@ -71,11 +137,12 @@ namespace NetPing
 
             var st = Stopwatch.StartNew();
             st.Start();
-            var d = Parallel.ForEach(pings, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 2 }, ip =>
+            var d = Parallel.ForEach(pings, ip =>
             {
                 while (queue.TryDequeue(out IPInfo kv))
                 {
                     kv.state = ip.Send(kv.ip, 200).Status.ToString();
+                    Console.WriteLine($" IMCP {kv.ip} {kv.state}");
                 }
             });
             st.Stop();
