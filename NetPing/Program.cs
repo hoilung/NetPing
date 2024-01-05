@@ -19,18 +19,27 @@ namespace NetPing
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.Title = "NetPing v1.0.1.24005 Author:hoilung@foxmail.com";
-
                 Console.WriteLine("\r\n用于同网段批量ICMP或TCP的ping检测，当前并发检测数量为：" + Environment.ProcessorCount + "，默认检测超时时间：200ms\r\n");
                 var ip = args.Any() ? args[0] : string.Empty;
                 var port = (args.Length == 2 && Regex.IsMatch(args[1], @"^\d+$")) ? int.Parse(args[1]) : 0;
 
                 IPAddress address = null;
-
                 do
                 {
                     if (string.IsNullOrEmpty(ip))
                     {
-                        Console.Write("输入网段中任意一个IP：");
+                        var list = Dns.GetHostEntry(Dns.GetHostName()).AddressList.Where(m => m.AddressFamily == AddressFamily.InterNetwork).ToList();
+                        if (list.Count > 0)
+                        {
+                            Console.Write("本机IP：");
+                            foreach (var item in list)
+                            {
+                                Console.Write(item.ToString() + "\t");
+                            }
+                            Console.WriteLine(Environment.NewLine);
+                        }
+
+                        Console.Write("请输入IPv4网段中任意一个IP：");
                         Console.ForegroundColor = ConsoleColor.Green;
                         ip = Console.ReadLine();
                         Console.Write("是否检测指定端口号? (回车忽略继续，否则请输入端口号)：");
@@ -45,7 +54,7 @@ namespace NetPing
                 } while (!IPAddress.TryParse(ip, out address));
                 if (ip == "q")
                     break;
-                if(address==null)
+                if (address == null)
                 {
                     Console.WriteLine("无效的IP地址");
                     break;
