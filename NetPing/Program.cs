@@ -18,8 +18,9 @@ namespace NetPing
             {
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.BackgroundColor = ConsoleColor.Black;
+                Console.Title = "NetPing v1.0.1.24005 Author:hoilung@foxmail.com";
 
-                Console.WriteLine("\r\n同网段ping，当前并发检测数量为：" + Environment.ProcessorCount + "，默认检测超时时间：200ms\r\n");
+                Console.WriteLine("\r\n用于同网段批量ICMP或TCP的ping检测，当前并发检测数量为：" + Environment.ProcessorCount + "，默认检测超时时间：200ms\r\n");
                 var ip = args.Any() ? args[0] : string.Empty;
                 var port = (args.Length == 2 && Regex.IsMatch(args[1], @"^\d+$")) ? int.Parse(args[1]) : 0;
 

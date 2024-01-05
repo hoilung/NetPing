@@ -6,8 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
-	<Authors>hoilung</Authors>	 
+	<Authors>hoilung@foxmail.com</Authors>	 
     <InvariantGlobalization>true</InvariantGlobalization>	 
+    <AssemblyVersion>1.0.2.24005</AssemblyVersion>	 
+    <FileVersion>1.0.4.24005</FileVersion>	 
   </PropertyGroup>
 
   <ItemGroup>
