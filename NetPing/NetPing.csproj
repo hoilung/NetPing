@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
-    <InvariantGlobalization>true</InvariantGlobalization>
+	<Authors>hoilung</Authors>	 
+    <InvariantGlobalization>true</InvariantGlobalization>	 
   </PropertyGroup>
 
   <ItemGroup>
