@@ -40,11 +40,16 @@ namespace NetPing
                             port = a;
                         }
                     }
-                    if (ip == "q")
+                    if (ip == "q" || !IPAddress.TryParse(ip, out address))
                         break;
                 } while (!IPAddress.TryParse(ip, out address));
-                if (ip == "q" || address == null)
+                if (ip == "q")
                     break;
+                if(address==null)
+                {
+                    Console.WriteLine("无效的IP地址");
+                    break;
+                }
 
                 if (port > 0)
                     checkTcpIp(address, port);
