@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -143,7 +144,8 @@ namespace NetPing
                     finally
                     {
                         if (kv.state == "Success")
-                        {                            
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
                             Console.WriteLine($"TCP\t{kv.ip}:{port} {kv.state} {st2.ElapsedMilliseconds}ms");
                         }
                         else
@@ -151,7 +153,7 @@ namespace NetPing
                             Console.ForegroundColor = ConsoleColor.Red;
                             Console.WriteLine($"TCP\t{kv.ip}:{port} {kv.state} ");
                         }
-                        Console.ForegroundColor = ConsoleColor.Green;
+
                         tcpclient.Close();
                         tcpclient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -159,6 +161,7 @@ namespace NetPing
                 }
             });
             st.Stop();
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("\r\n本次TCP检测IP范围：" + ips.FirstOrDefault() + "-" + ips.LastOrDefault() + ", TCP端口：" + port + ",最大超时时间：" + maxTimeout + "ms,本次检测用时：" + st.ElapsedMilliseconds + "ms\r\n");
 
             for (int i = 0; i < ips.Count; i += 10)
@@ -167,7 +170,7 @@ namespace NetPing
                 write(col);
 
             }
-            write(ips.Where(m => m.state == IPStatus.Success.ToString()).ToList(), true);
+            write(ips.Where(m => m.state == IPStatus.Success.ToString()).ToList(), true, port);
         }
 
 
@@ -202,7 +205,8 @@ namespace NetPing
                     kv.state = ip.Send(kv.ip, maxTimeout).Status.ToString();
                     stn.Stop();
                     if (kv.state == "Success")
-                    {                        
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"IMCP\t{kv.ip} {kv.state} {stn.ElapsedMilliseconds}ms");
                     }
                     else
@@ -210,10 +214,10 @@ namespace NetPing
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine($"IMCP\t{kv.ip} {kv.state} ");
                     }
-                    Console.ForegroundColor = ConsoleColor.Green;
                 }
             });
             st.Stop();
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("\r\n本次IMCP检测IP范围：" + ips.FirstOrDefault() + "-" + ips.LastOrDefault() + ",最大超时时间：" + maxTimeout + "ms,本次检测用时：" + st.ElapsedMilliseconds + "ms\r\n");
 
             for (int i = 0; i < ips.Count; i += 10)
@@ -226,14 +230,17 @@ namespace NetPing
 
         }
 
-        public static void write(List<IPInfo> ipinfos, bool isOk = false)
+        public static void write(List<IPInfo> ipinfos, bool isOk = false, int port = 0)
         {
+            if (!ipinfos.Any())
+                return;
 
             if (isOk)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("\r\n有效IP数量：" + ipinfos.Count() + "\r\n");
             }
+
             for (var i = 0; i < ipinfos.Count(); i++)
             {
                 var ipinfo = ipinfos[i];
@@ -256,6 +263,16 @@ namespace NetPing
             }
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine(" |");
+            if (isOk)
+            {
+                var sb = new StringBuilder();
+                ipinfos.ForEach(ipinfo => { sb.AppendLine(ipinfo.ip.ToString()); });
+                var ipd = ipinfos.FirstOrDefault()?.ip.Split('.');
+                string tmp = string.Join("-", ipd.SkipLast(1));
+                var filename = Path.Combine(Environment.CurrentDirectory, "IP_" + tmp + (port > 0 ? "_TCP_" : "_ICMP_") + ipinfos.Count.ToString() + "_" + DateTimeOffset.Now.ToUnixTimeMilliseconds() + ".txt");
+                Console.WriteLine("\r\n有效IP保存路径：" + filename);
+                File.WriteAllText(filename, sb.ToString());
+            }
         }
     }
     public class IPInfo
