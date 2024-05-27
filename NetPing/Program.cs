@@ -170,7 +170,7 @@ namespace NetPing
                 write(col);
 
             }
-            write(ips.Where(m => m.state == IPStatus.Success.ToString()).ToList(), true, port);
+            write(ips, true, port);
         }
 
 
@@ -226,7 +226,7 @@ namespace NetPing
                 write(col);
 
             }
-            write(ips.Where(m => m.state == IPStatus.Success.ToString()).ToList(), true);
+            write(ips, true);
 
         }
 
@@ -234,16 +234,17 @@ namespace NetPing
         {
             if (!ipinfos.Any())
                 return;
-
+            var ipList = ipinfos.ToList();
             if (isOk)
             {
+                ipList = ipinfos.Where(m => m.state == IPStatus.Success.ToString()).ToList();
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("\r\n有效IP数量：" + ipinfos.Count() + "\r\n");
+                Console.WriteLine("\r\n有效IP数量：" + ipList.Count() + "\r\n");
             }
 
-            for (var i = 0; i < ipinfos.Count(); i++)
+            for (var i = 0; i < ipList.Count(); i++)
             {
-                var ipinfo = ipinfos[i];
+                var ipinfo = ipList[i];
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write(" | ");
                 if (ipinfo.state == IPStatus.Success.ToString())
@@ -266,11 +267,11 @@ namespace NetPing
             if (isOk)
             {
                 var sb = new StringBuilder();
-                ipinfos.ForEach(ipinfo => { sb.AppendLine(ipinfo.ip.ToString()); });
-                var ipd = ipinfos.FirstOrDefault()?.ip.Split('.');
-                string tmp = string.Join("-", ipd.SkipLast(1));
-                var filename = Path.Combine(Environment.CurrentDirectory, "IP_" + tmp + (port > 0 ? "_TCP_" : "_ICMP_") + ipinfos.Count.ToString() + "_" + DateTimeOffset.Now.ToUnixTimeMilliseconds() + ".txt");
-                Console.WriteLine("\r\n有效IP保存路径：" + filename);
+                ipinfos.ForEach(ipinfo => { sb.AppendLine(ipinfo.ip.ToString() + "," + ipinfo.state); });
+                var ipaddress = ipinfos.FirstOrDefault()?.ip;
+                //string tmp = string.Join("-", ipd.SkipLast(1));
+                var filename = Path.Combine(Environment.CurrentDirectory, (port > 0 ? "TCP_" : "ICMP_") + ipaddress +"-255_ok-"+ ipList.Count.ToString() + "_" + DateTime.Now.ToString("yyyyMMdd.fff") + ".csv");
+                Console.WriteLine("\r\nIP结果保存路径：" + filename);
                 File.WriteAllText(filename, sb.ToString());
             }
         }

@@ -8,8 +8,8 @@
     <PublishAot>true</PublishAot>
 	<Authors>hoilung@foxmail.com</Authors>	 
     <InvariantGlobalization>true</InvariantGlobalization>	 
-    <AssemblyVersion>1.0.3.24026</AssemblyVersion>	 
-    <FileVersion>1.0.3.24026</FileVersion>	 
+    <AssemblyVersion>1.0.4.24148</AssemblyVersion>	 
+    <FileVersion>1.0.4.24148</FileVersion>	 
   </PropertyGroup>
 
   <ItemGroup>
